@@ -1,0 +1,102 @@
+name: Build ASAP Windows
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\projects\dcmtk
+            C:\projects\openjpeg
+            C:\projects\openslide-win64
+            C:\projects\libjpeg-turbo
+            C:\projects\libtiff
+            C:\projects\pugixml
+          key: asap-deps-v1
+
+      - name: Download dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri 'https://github.com/computationalpathologygroup/ASAP/releases/download/v2.1/asap_deps.zip' -OutFile 'asap_deps.zip'
+          7z x asap_deps.zip -oc:\projects
+
+      - name: Setup Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.5.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          dir: 'C:\Qt'
+
+      - name: Setup OpenCV
+        shell: pwsh
+        run: |
+          choco install -r opencv
+          echo "OpenCV_DIR=c:\tools\opencv\build" >> $env:GITHUB_ENV
+
+      - name: Configure CMake
+        shell: cmd
+        run: |
+          cmake -B build ^
+            -DJPEG_INCLUDE_DIR=C:/projects/libjpeg-turbo/include ^
+            -DJPEG_LIBRARY_DEBUG=C:/projects/libjpeg-turbo/lib/jpeg-static.lib ^
+            -DJPEG_LIBRARY_RELEASE=C:/projects/libjpeg-turbo/lib/jpeg-static.lib ^
+            -DOpenJPEG_DIR=C:/projects/openjpeg/lib/cmake/openjpeg-2.5 ^
+            -DOPENSLIDE_INCLUDE_DIR=c:/projects/openslide-win64/include/openslide ^
+            -DOPENSLIDE_LIBRARY=c:/projects/openslide-win64/lib/libopenslide.lib ^
+            -DDCMTK_DIR=c:/projects/dcmtk/cmake ^
+            -DTIFF_INCLUDE_DIR=c:/projects/libtiff/include ^
+            -DTIFF_LIBRARY_DEBUG=c:/projects/libtiff/lib/tiff.lib ^
+            -DTIFF_LIBRARY_RELEASE=c:/projects/libtiff/lib/tiff.lib ^
+            -DPugiXML_DIR=c:/projects/pugixml/lib/cmake/pugixml ^
+            -DBUILD_MULTIRESOLUTIONIMAGEINTERFACE_DICOM_SUPPORT=ON ^
+            -DBUILD_ASAP=TRUE ^
+            -DBUILD_IMAGEPROCESSING=TRUE ^
+            -DBUILD_EXECUTABLES=TRUE ^
+            -DQt6_DIR=C:/Qt/6.5.1/msvc2019_64/lib/cmake/Qt6 ^
+            -DQt6GuiTools_DIR=C:/Qt/6.5.1/msvc2019_64/lib/cmake/Qt6GuiTools ^
+            -DOpenCV_DIR=c:/tools/opencv/build ^
+            -DBUILD_WORKLIST_INTERFACE=FALSE ^
+            -DPACKAGE_ON_INSTALL=FALSE
+
+      - name: Build AnnotationPlugin only
+        shell: cmd
+        run: |
+          cmake --build build --config Release --target AnnotationPlugin
+
+      - name: Build all
+        shell: cmd
+        run: |
+          cmake --build build --config Release
+
+      - name: Package
+        shell: cmd
+        run: |
+          cd build
+          cpack
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASAP-Windows-Installer
+          path: build/*.exe
+
+      - name: Upload AnnotationPlugin DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnnotationPlugin-DLL
+          path: build/ASAP/annotation/Release/AnnotationPlugin.dll

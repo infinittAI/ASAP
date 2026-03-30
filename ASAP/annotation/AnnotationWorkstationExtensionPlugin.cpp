@@ -39,6 +39,7 @@
 #include <QProgressDialog>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QKeyEvent>
 
 #include <numeric>
 #include <iostream>
@@ -56,7 +57,8 @@ AnnotationWorkstationExtensionPlugin::AnnotationWorkstationExtensionPlugin() :
   _currentAnnotationLine(NULL),
   _currentAnnotationLabel(NULL),
   _currentAnnotationHeaderLabel(NULL),
-  _currentPixelArea(1.)
+  _currentPixelArea(1.),
+  _annotationsVisible(true)
 {
   QUiLoader loader;
   QFile file(":/AnnotationWorkstationExtensionPlugin_ui/AnnotationDockWidget.ui");
@@ -151,6 +153,22 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
     QtAnnotation::annotationColorForRects = colorForRects;
     _settings->setValue("annotationSelectionSensitivity", newSelectionSensitivity);
     _settings->setValue("annotationColorForRects", colorForRects);
+  }
+}
+
+void AnnotationWorkstationExtensionPlugin::keyPressEvent(QKeyEvent* event) {
+  if (event->key() == Qt::Key::Key_H) {
+    _annotationsVisible = !_annotationsVisible;
+    for (QList<QtAnnotation*>::iterator it = _qtAnnotations.begin(); it != _qtAnnotations.end(); ++it) {
+      (*it)->setVisible(_annotationsVisible);
+    }
+    if (_generatedAnnotation) {
+      _generatedAnnotation->setVisible(_annotationsVisible);
+    }
+    event->accept();
+  }
+  else {
+    event->ignore();
   }
 }
 

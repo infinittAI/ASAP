@@ -44,6 +44,7 @@ public :
     std::weak_ptr<MultiResolutionImage> getCurrentImage();
     void clearSelection();
     bool canClose();
+    void keyPressEvent(QKeyEvent* event);
 
 public slots:
     void onNewImageLoaded(std::weak_ptr<MultiResolutionImage> img, std::string fileName);
@@ -88,6 +89,7 @@ private :
     QEvent* _oldEvent;
     std::weak_ptr<MultiResolutionImage> _img;
     float _currentPixelArea;
+    bool _annotationsVisible;
 
     bool shouldClear();
     void clear();
