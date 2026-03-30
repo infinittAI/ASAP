@@ -71,32 +71,29 @@ jobs:
             -DQt6GuiTools_DIR=C:/Qt/6.5.1/msvc2019_64/lib/cmake/Qt6GuiTools ^
             -DOpenCV_DIR=c:/tools/opencv/build ^
             -DBUILD_WORKLIST_INTERFACE=FALSE ^
-            -DPACKAGE_ON_INSTALL=FALSE
-
-      - name: Build AnnotationPlugin only
-        shell: cmd
-        run: |
-          cmake --build build --config Release --target AnnotationPlugin
+            -DPACKAGE_ON_INSTALL=TRUE
 
       - name: Build all
         shell: cmd
         run: |
           cmake --build build --config Release
 
-      - name: Package
-        shell: cmd
-        run: |
-          cd build
-          cpack
-
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: ASAP-Windows-Installer
-          path: build/*.exe
-
       - name: Upload AnnotationPlugin DLL
         uses: actions/upload-artifact@v4
         with:
           name: AnnotationPlugin-DLL
           path: build/ASAP/annotation/Release/AnnotationPlugin.dll
+
+      - name: Package
+        shell: cmd
+        run: |
+          cd build
+          cpack -G NSIS
+        continue-on-error: true
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: ASAP-Windows-Installer
+          path: build/*.exe
