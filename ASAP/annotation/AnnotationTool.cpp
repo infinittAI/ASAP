@@ -25,7 +25,7 @@ void AnnotationTool::mouseMoveEvent(QMouseEvent *event) {
     if (_generating) {
       QPointF scenePos = _viewer->mapToScene(event->pos());
       if (event->buttons() == Qt::LeftButton) {
-        if (QLineF(_viewer->mapFromScene(scenePos), _viewer->mapFromScene(QPointF(_last.getX(), _last.getY()))).length() > 40) {
+        if (QLineF(_viewer->mapFromScene(scenePos), _viewer->mapFromScene(QPointF(_last.getX(), _last.getY()))).length() > _dragThresholdScreen) {
           addCoordinate(scenePos);
         }
       }

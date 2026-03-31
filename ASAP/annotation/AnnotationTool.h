@@ -28,6 +28,8 @@ public slots:
 protected:
   virtual void addCoordinate(const QPointF& scenePos);
 
+  static constexpr float _dragThresholdScreen = 5.0f;
+
   AnnotationWorkstationExtensionPlugin* _annotationPlugin;
   bool _generating;
   Point _start;

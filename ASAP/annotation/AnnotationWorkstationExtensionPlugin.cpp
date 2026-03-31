@@ -135,6 +135,21 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
   annotationColorForRects->setToolTip("Set the color of the rectangles to the same color as the annotation itself.");
   optionsDialogLayout->addRow("Selection sensitivity", selSensSpinBox);
   optionsDialogLayout->addRow("Use annotation color for coordinate indicators", annotationColorForRects);
+
+  QCheckBox* simplifyOnFinish = new QCheckBox();
+  simplifyOnFinish->setChecked(_settings->value("SimplifyOnFinish", true).toBool());
+  simplifyOnFinish->setToolTip(
+    "Simplify freehand polygon annotations using Douglas-Peucker on finish.");
+  QDoubleSpinBox* simplifyEpsilon = new QDoubleSpinBox();
+  simplifyEpsilon->setMinimum(0.5);
+  simplifyEpsilon->setMaximum(50.0);
+  simplifyEpsilon->setValue(_settings->value("SimplifyEpsilon", 2.0).toDouble());
+  simplifyEpsilon->setSingleStep(0.5);
+  simplifyEpsilon->setToolTip(
+    "Simplification epsilon in image pixels. Lower = more detail, higher = fewer points.");
+  optionsDialogLayout->addRow("Simplify polygons on finish", simplifyOnFinish);
+  optionsDialogLayout->addRow("Simplification epsilon", simplifyEpsilon);
+
   dialogLayout->addLayout(optionsDialogLayout);
   QPushButton* cancel = new QPushButton("Cancel");
   QPushButton* ok = new QPushButton("Ok");
@@ -153,6 +168,8 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
     QtAnnotation::annotationColorForRects = colorForRects;
     _settings->setValue("annotationSelectionSensitivity", newSelectionSensitivity);
     _settings->setValue("annotationColorForRects", colorForRects);
+    _settings->setValue("SimplifyOnFinish", simplifyOnFinish->isChecked());
+    _settings->setValue("SimplifyEpsilon", simplifyEpsilon->value());
   }
 }
 
@@ -881,6 +898,17 @@ void AnnotationWorkstationExtensionPlugin::updateGeneratingAnnotationLabel(QtAnn
 
 void AnnotationWorkstationExtensionPlugin::finishAnnotation(bool cancel) {
   if (_generatedAnnotation) {
+    if (!cancel) {
+      bool doSimplify = _settings->value("SimplifyOnFinish", true).toBool();
+      if (doSimplify) {
+        auto annotType = _generatedAnnotation->getAnnotation()->getType();
+        if ((annotType == Annotation::Type::POLYGON || annotType == Annotation::Type::SPLINE)
+            && _generatedAnnotation->getAnnotation()->getNumberOfPoints() > 4) {
+          float epsilon = _settings->value("SimplifyEpsilon", 2.0).toFloat();
+          _generatedAnnotation->getAnnotation()->simplify(0, epsilon);
+        }
+      }
+    }
     _generatedAnnotation->finish();
     updateGeneratingAnnotationLabel(NULL);
     disconnect(_generatedAnnotation, SIGNAL(annotationChanged(QtAnnotation*)), this, SLOT(updateGeneratingAnnotationLabel(QtAnnotation*)));
