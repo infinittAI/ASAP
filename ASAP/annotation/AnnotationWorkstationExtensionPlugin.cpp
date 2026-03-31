@@ -174,6 +174,28 @@ void AnnotationWorkstationExtensionPlugin::keyPressEvent(QKeyEvent* event) {
     }
     event->accept();
   }
+  else if (event->key() == Qt::Key::Key_C) {
+    if (!_selectedAnnotations.empty()) {
+      QtAnnotation* first = *_selectedAnnotations.begin();
+      QColor initialColor(QString::fromStdString(first->getAnnotation()->getColor()));
+      QColor newColor = QColorDialog::getColor(initialColor, NULL, QString("Select annotation color"));
+      if (newColor.isValid()) {
+        for (QSet<QtAnnotation*>::iterator it = _selectedAnnotations.begin(); it != _selectedAnnotations.end(); ++it) {
+          (*it)->getAnnotation()->setColor(newColor.name().toStdString());
+          QMap<QtAnnotation*, QTreeWidgetItem*>::iterator itemIt = _annotToItem.find(*it);
+          if (itemIt != _annotToItem.end()) {
+            int cHeight = _treeWidget->visualItemRect(itemIt.value()).height();
+            QPixmap iconPM(cHeight, cHeight);
+            iconPM.fill(newColor);
+            QIcon color(iconPM);
+            itemIt.value()->setIcon(0, color);
+            itemIt.value()->setData(0, Qt::UserRole, newColor);
+          }
+        }
+      }
+    }
+    event->accept();
+  }
   else {
     event->ignore();
   }
