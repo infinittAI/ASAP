@@ -160,6 +160,31 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
   generalLayout->addRow("Simplify polygons on finish", simplifyOnFinish);
   generalLayout->addRow("Simplification epsilon", simplifyEpsilon);
 
+  // Default annotation color picker
+  QPushButton* defaultColorBtn = new QPushButton();
+  QColor defaultAnnotColor = _settings->value("DefaultAnnotationColor", "#F4FA58").value<QColor>();
+  defaultColorBtn->setObjectName("DefaultAnnotationColor");
+  {
+    int sz = 24;
+    QPixmap pm(sz, sz);
+    pm.fill(defaultAnnotColor);
+    defaultColorBtn->setIcon(QIcon(pm));
+    defaultColorBtn->setText(defaultAnnotColor.name());
+    defaultColorBtn->setToolTip("Default color for new annotations");
+  }
+  connect(defaultColorBtn, &QPushButton::clicked, [defaultColorBtn]() {
+    QColor current(defaultColorBtn->text());
+    QColor chosen = QColorDialog::getColor(current, nullptr, "Select default annotation color");
+    if (chosen.isValid()) {
+      int sz = 24;
+      QPixmap pm(sz, sz);
+      pm.fill(chosen);
+      defaultColorBtn->setIcon(QIcon(pm));
+      defaultColorBtn->setText(chosen.name());
+    }
+  });
+  generalLayout->addRow("Default annotation color", defaultColorBtn);
+
   tabWidget->addTab(generalTab, "General");
 
   // === Shortcuts Tab ===
@@ -230,6 +255,7 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
     _settings->setValue("annotationColorForRects", colorForRects);
     _settings->setValue("SimplifyOnFinish", simplifyOnFinish->isChecked());
     _settings->setValue("SimplifyEpsilon", simplifyEpsilon->value());
+    _settings->setValue("DefaultAnnotationColor", QColor(defaultColorBtn->text()));
 
     // Shortcut settings
     QList<QKeySequenceEdit*> keyEdits = shortcutsContent->findChildren<QKeySequenceEdit*>();
@@ -1040,11 +1066,12 @@ void AnnotationWorkstationExtensionPlugin::finishAnnotation(bool cancel) {
       newAnnotation->setSelected(true);
       int cHeight = _treeWidget->visualItemRect(newAnnotation).height();
       QPixmap iconPM(cHeight, cHeight);
-      iconPM.fill(QColor("yellow"));
+      QColor defaultAnnotColor = _settings->value("DefaultAnnotationColor", "#F4FA58").value<QColor>();
+      iconPM.fill(defaultAnnotColor);
       QIcon color(iconPM);
       newAnnotation->setIcon(0, color);
-      newAnnotation->setData(0, Qt::UserRole, QColor("#F4FA58"));
-      _generatedAnnotation->getAnnotation()->setColor("#F4FA58");
+      newAnnotation->setData(0, Qt::UserRole, defaultAnnotColor);
+      _generatedAnnotation->getAnnotation()->setColor(defaultAnnotColor.name().toStdString());
       _treeWidget->resizeColumnToContents(0);      
       _treeWidget->resizeColumnToContents(1);
       _activeAnnotation = _generatedAnnotation;
