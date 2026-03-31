@@ -6,6 +6,7 @@
 #include "../PathologyViewer.h"
 #include "AnnotationWorkstationExtensionPlugin.h"
 #include "core/Point.h"
+#include "interfaces/ShortcutManager.h"
 
 DotAnnotationTool::DotAnnotationTool(AnnotationWorkstationExtensionPlugin* annotationPlugin, PathologyViewer* viewer) : 
   AnnotationTool(annotationPlugin, viewer)
@@ -33,7 +34,7 @@ QAction* DotAnnotationTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/AnnotationWorkstationExtensionPlugin_icons/dot.png")));
     }
-    _button->setShortcut(QKeySequence("d"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_dotannotation", "D"));
   }
   return _button;
 }

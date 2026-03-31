@@ -33,6 +33,7 @@
 #include "ASAP_Window.h"
 #include "PathologyViewer.h"
 #include "interfaces/interfaces.h"
+#include "interfaces/ShortcutManager.h"
 #include "WSITileGraphicsItemCache.h"
 #include "config/ASAPMacros.h"
 #include "multiresolutionimageinterface/MultiResolutionImageReader.h"
@@ -197,7 +198,7 @@ void ASAP_Window::loadPlugins() {
 void ASAP_Window::keyPressEvent(QKeyEvent* event)
 {
     event->ignore();
-    if (event->key() == Qt::Key::Key_F1) {
+    if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("window_show_shortcuts", "F1"), event->key(), event->modifiers())) {
         this->showShortcutOverview();
     }
     for (auto const& extension : _extensions) {
@@ -421,9 +422,9 @@ void ASAP_Window::retranslateUi()
   actionOpen->setText(QApplication::translate("PathologyWorkstation", "Open", 0));
   actionOpen->setIconText(QApplication::translate("PathologyWorkstation", "Open", 0));
   actionAbout->setText(QApplication::translate("PathologyWorkstation", "About...", 0));
-  actionOpen->setShortcut(QApplication::translate("PathologyWorkstation", "Ctrl+O", 0));
+  actionOpen->setShortcut(ShortcutManager::getShortcut("window_open_file", "Ctrl+O"));
   actionClose->setText(QApplication::translate("PathologyWorkstation", "Close", 0));
-  actionClose->setShortcut(QApplication::translate("PathologyWorkstation", "Ctrl+C", 0));
+  actionClose->setShortcut(ShortcutManager::getShortcut("window_close_file", "Ctrl+C"));
   actionClose->setIconText(QApplication::translate("PathologyWorkstation", "Close", 0));
   menuFile->setTitle(QApplication::translate("PathologyWorkstation", "File", 0));
   menuView->setTitle(QApplication::translate("PathologyWorkstation", "View", 0));

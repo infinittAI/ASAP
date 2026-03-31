@@ -19,6 +19,7 @@
 #include "PointSetQtAnnotation.h"
 #include "multiresolutionimageinterface/MultiResolutionImage.h"
 #include "../PathologyViewer.h"
+#include "interfaces/ShortcutManager.h"
 #include <QtUiTools>
 #include <QDockWidget>
 #include <QTreeWidget>
@@ -34,6 +35,10 @@
 #include <QFrame>
 #include <QFormLayout>
 #include <QSpinBox>
+#include <QTabWidget>
+#include <QKeySequenceEdit>
+#include <QScrollArea>
+#include <QGroupBox>
 #include "core/filetools.h"
 #include "../QtProgressMonitor.h"
 #include <QProgressDialog>
@@ -119,9 +124,14 @@ void AnnotationWorkstationExtensionPlugin::onClearButtonPressed() {
 void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
   QDialog* optionsDialog = new QDialog();
   optionsDialog->setWindowTitle("Set options for annotation tools");
+  optionsDialog->setMinimumSize(500, 400);
+
   QVBoxLayout* dialogLayout = new QVBoxLayout();
-  QFormLayout* optionsDialogLayout = new QFormLayout();
-  QHBoxLayout* buttonLayout = new QHBoxLayout();
+  QTabWidget* tabWidget = new QTabWidget();
+
+  // === General Tab ===
+  QWidget* generalTab = new QWidget();
+  QFormLayout* generalLayout = new QFormLayout(generalTab);
   QDoubleSpinBox * selSensSpinBox = new QDoubleSpinBox();
   selSensSpinBox->setMinimum(20);
   selSensSpinBox->setMaximum(1000);
@@ -133,8 +143,8 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
   annotationColorForRects->setChecked(QtAnnotation::annotationColorForRects);
   annotationColorForRects->setObjectName("AnnotationColorForRects");
   annotationColorForRects->setToolTip("Set the color of the rectangles to the same color as the annotation itself.");
-  optionsDialogLayout->addRow("Selection sensitivity", selSensSpinBox);
-  optionsDialogLayout->addRow("Use annotation color for coordinate indicators", annotationColorForRects);
+  generalLayout->addRow("Selection sensitivity", selSensSpinBox);
+  generalLayout->addRow("Use annotation color for coordinate indicators", annotationColorForRects);
 
   QCheckBox* simplifyOnFinish = new QCheckBox();
   simplifyOnFinish->setChecked(_settings->value("SimplifyOnFinish", true).toBool());
@@ -147,21 +157,71 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
   simplifyEpsilon->setSingleStep(0.5);
   simplifyEpsilon->setToolTip(
     "Simplification epsilon in image pixels. Lower = more detail, higher = fewer points.");
-  optionsDialogLayout->addRow("Simplify polygons on finish", simplifyOnFinish);
-  optionsDialogLayout->addRow("Simplification epsilon", simplifyEpsilon);
+  generalLayout->addRow("Simplify polygons on finish", simplifyOnFinish);
+  generalLayout->addRow("Simplification epsilon", simplifyEpsilon);
 
-  dialogLayout->addLayout(optionsDialogLayout);
+  tabWidget->addTab(generalTab, "General");
+
+  // === Shortcuts Tab ===
+  QScrollArea* scrollArea = new QScrollArea();
+  QWidget* shortcutsContent = new QWidget();
+  QVBoxLayout* shortcutsLayout = new QVBoxLayout(shortcutsContent);
+
+  QList<ShortcutEntry> shortcuts = ShortcutManager::getAllShortcuts();
+  QMap<QString, QFormLayout*> groupLayouts;
+  QMap<QString, QGroupBox*> groupBoxes;
+
+  for (const auto& entry : shortcuts) {
+    if (!groupLayouts.contains(entry.group)) {
+      QGroupBox* groupBox = new QGroupBox(entry.group);
+      QFormLayout* groupLayout = new QFormLayout(groupBox);
+      groupLayouts[entry.group] = groupLayout;
+      groupBoxes[entry.group] = groupBox;
+      shortcutsLayout->addWidget(groupBox);
+    }
+    QKeySequenceEdit* keyEdit = new QKeySequenceEdit();
+    keyEdit->setKeySequence(ShortcutManager::getShortcut(entry.id, entry.defaultSeq.toString()));
+    keyEdit->setObjectName(entry.id);
+    keyEdit->setToolTip(QString("Shortcut for: %1").arg(entry.displayName));
+    groupLayouts[entry.group]->addRow(entry.displayName, keyEdit);
+  }
+
+  QPushButton* resetButton = new QPushButton("Reset All to Defaults");
+  connect(resetButton, &QPushButton::clicked, [shortcutsContent]() {
+    ShortcutManager::resetToDefaults();
+    QList<ShortcutEntry> entries = ShortcutManager::getAllShortcuts();
+    for (const auto& entry : entries) {
+      QKeySequenceEdit* edit = shortcutsContent->findChild<QKeySequenceEdit*>(entry.id);
+      if (edit) {
+        edit->setKeySequence(entry.defaultSeq);
+      }
+    }
+  });
+  shortcutsLayout->addWidget(resetButton);
+  shortcutsLayout->addStretch();
+
+  scrollArea->setWidget(shortcutsContent);
+  scrollArea->setWidgetResizable(true);
+  tabWidget->addTab(scrollArea, "Shortcuts");
+
+  // === Dialog buttons ===
+  QHBoxLayout* buttonLayout = new QHBoxLayout();
   QPushButton* cancel = new QPushButton("Cancel");
   QPushButton* ok = new QPushButton("Ok");
   cancel->setDefault(true);
   connect(cancel, SIGNAL(clicked()), optionsDialog, SLOT(reject()));
   connect(ok, SIGNAL(clicked()), optionsDialog, SLOT(accept()));
+  buttonLayout->addStretch();
   buttonLayout->addWidget(cancel);
   buttonLayout->addWidget(ok);
+
+  dialogLayout->addWidget(tabWidget);
   dialogLayout->addLayout(buttonLayout);
   optionsDialog->setLayout(dialogLayout);
+
   int rval = optionsDialog->exec();
   if (rval) {
+    // General settings
     float newSelectionSensitivity = static_cast<float>(selSensSpinBox->value());
     bool colorForRects = annotationColorForRects->isChecked();
     QtAnnotation::selectionSensitivity = newSelectionSensitivity;
@@ -170,11 +230,40 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
     _settings->setValue("annotationColorForRects", colorForRects);
     _settings->setValue("SimplifyOnFinish", simplifyOnFinish->isChecked());
     _settings->setValue("SimplifyEpsilon", simplifyEpsilon->value());
+
+    // Shortcut settings
+    QList<QKeySequenceEdit*> keyEdits = shortcutsContent->findChildren<QKeySequenceEdit*>();
+    for (QKeySequenceEdit* edit : keyEdits) {
+      QString id = edit->objectName();
+      QKeySequence newSeq = edit->keySequence();
+      ShortcutManager::setShortcut(id, newSeq);
+    }
+
+    // Apply QAction shortcuts immediately for annotation tools
+    QMap<QString, QString> toolShortcutIds = {
+      {"dotannotation", "tool_dotannotation"},
+      {"polyannotation", "tool_polyannotation"},
+      {"splineannotation", "tool_splineannotation"},
+      {"rectangleannotation", "tool_rectangleannotation"},
+      {"measurementannotation", "tool_measurementannotation"},
+      {"pointsetannotation", "tool_pointsetannotation"},
+    };
+    for (auto& tool : _annotationTools) {
+      if (tool) {
+        QString toolName = QString::fromStdString(tool->name());
+        if (toolShortcutIds.contains(toolName)) {
+          QAction* btn = tool->getToolButton();
+          if (btn) {
+            btn->setShortcut(ShortcutManager::getShortcut(toolShortcutIds[toolName], ""));
+          }
+        }
+      }
+    }
   }
 }
 
 void AnnotationWorkstationExtensionPlugin::keyPressEvent(QKeyEvent* event) {
-  if (event->key() == Qt::Key::Key_H) {
+  if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("annotation_toggle_visibility", "H"), event->key(), event->modifiers())) {
     _annotationsVisible = !_annotationsVisible;
     for (QList<QtAnnotation*>::iterator it = _qtAnnotations.begin(); it != _qtAnnotations.end(); ++it) {
       (*it)->setVisible(_annotationsVisible);
@@ -184,14 +273,14 @@ void AnnotationWorkstationExtensionPlugin::keyPressEvent(QKeyEvent* event) {
     }
     event->accept();
   }
-  else if (event->key() == Qt::Key::Key_E) {
+  else if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("annotation_delete_selected", "E"), event->key(), event->modifiers())) {
     QSet<QtAnnotation*> toDelete = _selectedAnnotations;
     for (QSet<QtAnnotation*>::iterator it = toDelete.begin(); it != toDelete.end(); ++it) {
       deleteAnnotation(*it);
     }
     event->accept();
   }
-  else if (event->key() == Qt::Key::Key_C) {
+  else if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("annotation_change_color", "C"), event->key(), event->modifiers())) {
     if (!_selectedAnnotations.empty()) {
       QtAnnotation* first = *_selectedAnnotations.begin();
       QColor initialColor(QString::fromStdString(first->getAnnotation()->getColor()));
@@ -695,7 +784,7 @@ bool AnnotationWorkstationExtensionPlugin::eventFilter(QObject* watched, QEvent*
   }
   else if (qobject_cast<QWidget*>(watched) == _treeWidget && event->type() == QEvent::KeyPress) {
     QKeyEvent* kpEvent = dynamic_cast<QKeyEvent*>(event);
-    if (kpEvent->key() == Qt::Key::Key_Delete) {
+    if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("tree_delete_item", "Del"), kpEvent->key(), kpEvent->modifiers())) {
       QList<QTreeWidgetItem*> selItems = _treeWidget->selectedItems();
       // Handle selected items iteratively to make sure we do not accidentely remove the parent before the child
       while (!selItems.empty()) {

@@ -18,6 +18,7 @@
 #include "../PathologyViewer.h"
 #include "multiresolutionimageinterface/MultiResolutionImage.h"
 #include <cmath>
+#include "interfaces/ShortcutManager.h"
 
 RectangleAnnotationTool::QGraphicsTextItemWithBackground::QGraphicsTextItemWithBackground(const QString &text) :
 QGraphicsTextItem(text) { }
@@ -213,7 +214,7 @@ QAction* RectangleAnnotationTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/AnnotationWorkstationExtensionPlugin_icons/rectangle.png")));
     }
-    _button->setShortcut(QKeySequence("r"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_rectangleannotation", "R"));
   }
   return _button;
 }

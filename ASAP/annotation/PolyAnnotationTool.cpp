@@ -14,6 +14,7 @@
 #include <numeric>
 #include <iostream>
 #include <QTimeLine>
+#include "interfaces/ShortcutManager.h"
 
 PolyAnnotationTool::PolyAnnotationTool(AnnotationWorkstationExtensionPlugin* annotationPlugin, PathologyViewer* viewer) : 
   AnnotationTool(annotationPlugin, viewer),
@@ -99,7 +100,7 @@ QAction* PolyAnnotationTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/AnnotationWorkstationExtensionPlugin_icons/poly.png")));
     }
-    _button->setShortcut(QKeySequence("p"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_polyannotation", "P"));
   }
   return _button;
 }

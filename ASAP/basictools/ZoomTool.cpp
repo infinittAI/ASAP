@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QStyleHints>
 #include "../PathologyViewer.h"
+#include "interfaces/ShortcutManager.h"
 #include <iostream>
 
 ZoomTool::ZoomTool() :
@@ -58,7 +59,7 @@ QAction* ZoomTool::getToolButton() {
     } else {
         _button->setIcon(QIcon(QPixmap(":/basictools_icons/zoom.png")));
     }
-    _button->setShortcut(QKeySequence("z"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_zoom", "Z"));
   }
   return _button;
 }

@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QStyleHints>
 #include "../PathologyViewer.h"
+#include "interfaces/ShortcutManager.h"
 
 void PanTool::mouseMoveEvent(QMouseEvent *event) {
   if (_viewer) {
@@ -37,7 +38,7 @@ QAction* PanTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/basictools_icons/pan.png")));
     }
-    _button->setShortcut(QKeySequence("x"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_pan", "X"));
   }
   return _button;
 }

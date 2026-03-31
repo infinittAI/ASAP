@@ -15,6 +15,7 @@
 #include <iostream>
 #include <QTimeLine>
 #include "multiresolutionimageinterface/MultiResolutionImage.h"
+#include "interfaces/ShortcutManager.h"
 
 MeasurementAnnotationTool::QGraphicsTextItemWithBackground::QGraphicsTextItemWithBackground(const QString &text) :
 QGraphicsTextItem(text) { }
@@ -143,7 +144,7 @@ QAction* MeasurementAnnotationTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/AnnotationWorkstationExtensionPlugin_icons/measure.png")));
     }
-    _button->setShortcut(QKeySequence("m"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_measurementannotation", "M"));
   }
   return _button;
 }

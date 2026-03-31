@@ -6,6 +6,7 @@
 #include <QStyleHints>
 #include "AnnotationWorkstationExtensionPlugin.h"
 #include "../PathologyViewer.h"
+#include "interfaces/ShortcutManager.h"
 
 SplineAnnotationTool::SplineAnnotationTool(AnnotationWorkstationExtensionPlugin* annotationPlugin, PathologyViewer* viewer) :
 PolyAnnotationTool(annotationPlugin, viewer)
@@ -22,7 +23,7 @@ QAction* SplineAnnotationTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/AnnotationWorkstationExtensionPlugin_icons/spline.png")));
     }
-    _button->setShortcut(QKeySequence("s"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_splineannotation", "S"));
   }
   return _button;
 }

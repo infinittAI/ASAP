@@ -14,6 +14,7 @@
 #include <numeric>
 #include <iostream>
 #include <QTimeLine>
+#include "interfaces/ShortcutManager.h"
 
 PointSetAnnotationTool::PointSetAnnotationTool(AnnotationWorkstationExtensionPlugin* annotationPlugin, PathologyViewer* viewer) :
 AnnotationTool(annotationPlugin, viewer)
@@ -39,7 +40,7 @@ QAction* PointSetAnnotationTool::getToolButton() {
     else {
         _button->setIcon(QIcon(QPixmap(":/AnnotationWorkstationExtensionPlugin_icons/pointset.png")));
     }
-    _button->setShortcut(QKeySequence("i"));
+    _button->setShortcut(ShortcutManager::getShortcut("tool_pointsetannotation", "I"));
   }
   return _button;
 }

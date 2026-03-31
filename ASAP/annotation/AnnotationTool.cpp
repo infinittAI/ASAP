@@ -2,6 +2,7 @@
 #include "QtAnnotation.h"
 #include "AnnotationWorkstationExtensionPlugin.h"
 #include "annotation/Annotation.h"
+#include "interfaces/ShortcutManager.h"
 #include "../PathologyViewer.h"
 #include <math.h>
 #include <numeric>
@@ -59,11 +60,11 @@ void AnnotationTool::mouseDoubleClickEvent(QMouseEvent *event) {
 }
 
 void AnnotationTool::keyPressEvent(QKeyEvent *event) {
-  if (event->key() == Qt::Key::Key_Escape) {
+  if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("annotation_cancel", "Esc"), event->key(), event->modifiers())) {
     cancelAnnotation();
     event->accept();
   }
-  else if (event->key() == Qt::Key::Key_Delete && event->modifiers() == Qt::ShiftModifier) {
+  else if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("annotation_cancel_entire", "Shift+Del"), event->key(), event->modifiers())) {
     if (_generating) {
       cancelAnnotation();
     }
@@ -75,7 +76,7 @@ void AnnotationTool::keyPressEvent(QKeyEvent *event) {
     }
     event->accept();
   }
-  else if (event->key() == Qt::Key::Key_Delete) {
+  else if (ShortcutManager::matchesKeyEvent(ShortcutManager::getShortcut("annotation_remove_last_point", "Del"), event->key(), event->modifiers())) {
     if (_generating) {
       if (_annotationPlugin->getGeneratedAnnotation()->getAnnotation()->getCoordinates().size() < 2) {
         cancelAnnotation();

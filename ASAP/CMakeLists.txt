@@ -11,6 +11,7 @@ set(HEADERS
     UtilityFunctions.h
     ScaleBar.h
     interfaces/interfaces.h
+    interfaces/ShortcutManager.h
     QtProgressMonitor.h
 )
 
@@ -26,6 +27,7 @@ set(SOURCE
     WSITileGraphicsItem.cpp
     ScaleBar.cpp
     QtProgressMonitor.cpp
+    interfaces/ShortcutManager.cpp
 )
 
 set(RESOURCE
