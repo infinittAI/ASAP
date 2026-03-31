@@ -167,7 +167,7 @@ void AnnotationWorkstationExtensionPlugin::keyPressEvent(QKeyEvent* event) {
     }
     event->accept();
   }
-  else if (event->key() == Qt::Key::Key_D) {
+  else if (event->key() == Qt::Key::Key_E) {
     QSet<QtAnnotation*> toDelete = _selectedAnnotations;
     for (QSet<QtAnnotation*>::iterator it = toDelete.begin(); it != toDelete.end(); ++it) {
       deleteAnnotation(*it);
