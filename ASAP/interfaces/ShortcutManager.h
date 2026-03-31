@@ -6,6 +6,7 @@
 #include <QList>
 #include <QStringList>
 #include <QHash>
+#include "asaplib_export.h"
 
 struct ShortcutEntry {
   QString id;
@@ -14,7 +15,7 @@ struct ShortcutEntry {
   QKeySequence defaultSeq;
 };
 
-class ShortcutManager {
+class ASAPLIB_EXPORT ShortcutManager {
 public:
   static QKeySequence getShortcut(const QString& id, const QString& defaultSeq);
   static void setShortcut(const QString& id, const QKeySequence& seq);
