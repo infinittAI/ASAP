@@ -259,6 +259,31 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
         }
       }
     }
+
+    // Apply shortcuts for Zoom/Pan tools and Window actions via parent window
+    QWidget* mainWindow = _viewer ? _viewer->window() : nullptr;
+    if (mainWindow) {
+      // Zoom and Pan tool actions
+      QMap<QString, QString> externalToolShortcuts = {
+        {"zoom", "tool_zoom"},
+        {"pan", "tool_pan"},
+      };
+      for (auto it = externalToolShortcuts.constBegin(); it != externalToolShortcuts.constEnd(); ++it) {
+        QAction* action = mainWindow->findChild<QAction*>(it.key());
+        if (action) {
+          action->setShortcut(ShortcutManager::getShortcut(it.value(), ""));
+        }
+      }
+      // Window menu actions
+      QAction* openAction = mainWindow->findChild<QAction*>("actionOpen");
+      if (openAction) {
+        openAction->setShortcut(ShortcutManager::getShortcut("window_open_file", "Ctrl+O"));
+      }
+      QAction* closeAction = mainWindow->findChild<QAction*>("actionClose");
+      if (closeAction) {
+        closeAction->setShortcut(ShortcutManager::getShortcut("window_close_file", "Ctrl+C"));
+      }
+    }
   }
 }
 
