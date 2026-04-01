@@ -6,6 +6,7 @@
 #include <memory>
 #include <QString>
 #include <QMap>
+#include <QColor>
 
 class AnnotationService;
 class QtAnnotation;
@@ -30,7 +31,7 @@ public :
     std::vector<std::shared_ptr<ToolPluginInterface> > getTools();
     AnnotationWorkstationExtensionPlugin();
     ~AnnotationWorkstationExtensionPlugin();
-    void startAnnotation(float x, float y, const std::string& type);
+    void startAnnotation(float x, float y, const std::string& type, const QColor& forcedColor = QColor());
     void finishAnnotation(bool cancel = false);
     QDockWidget* getDockWidget();
     QtAnnotation* getActiveAnnotation();
@@ -90,6 +91,7 @@ private :
     std::weak_ptr<MultiResolutionImage> _img;
     float _currentPixelArea;
     bool _annotationsVisible;
+    QColor _pendingAnnotationColor;
 
     bool shouldClear();
     void clear();

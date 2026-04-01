@@ -4,6 +4,7 @@
 #include "interfaces/interfaces.h"
 #include "core/Point.h"
 #include "annotationplugin_export.h"
+#include <QColor>
 
 class AnnotationWorkstationExtensionPlugin;
 class PathologyViewer;
@@ -21,6 +22,7 @@ public :
   virtual void keyPressEvent(QKeyEvent *event);
   virtual QAction* getToolButton() = 0;
   void setActive(bool active);
+  virtual QColor getForcedColor() const { return QColor(); }
 
 public slots:
   virtual void cancelAnnotation();

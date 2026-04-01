@@ -1,6 +1,7 @@
 #include "AnnotationWorkstationExtensionPlugin.h"
 #include "DotAnnotationTool.h"
 #include "PolyAnnotationTool.h"
+#include "YellowPolyAnnotationTool.h"
 #include "PointSetAnnotationTool.h"
 #include "SplineAnnotationTool.h"
 #include "annotation/AnnotationService.h"
@@ -269,10 +270,12 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
     QMap<QString, QString> toolShortcutIds = {
       {"dotannotation", "tool_dotannotation"},
       {"polyannotation", "tool_polyannotation"},
+      {"yellowpolyannotation", "tool_yellowpolyannotation"},
       {"splineannotation", "tool_splineannotation"},
       {"rectangleannotation", "tool_rectangleannotation"},
       {"measurementannotation", "tool_measurementannotation"},
       {"pointsetannotation", "tool_pointsetannotation"},
+      {"yellowpolyannotation", "tool_yellowpolyannotation"},
     };
     for (auto& tool : _annotationTools) {
       if (tool) {
@@ -952,6 +955,8 @@ bool AnnotationWorkstationExtensionPlugin::initialize(PathologyViewer* viewer) {
   _annotationTools.push_back(tool);
   tool.reset(new PolyAnnotationTool(this, viewer));
   _annotationTools.push_back(tool);
+  tool.reset(new YellowPolyAnnotationTool(this, viewer));
+  _annotationTools.push_back(tool);
   tool.reset(new SplineAnnotationTool(this, viewer));
   _annotationTools.push_back(tool);
   tool.reset(new PointSetAnnotationTool(this, viewer));
@@ -966,17 +971,18 @@ std::vector<std::shared_ptr<ToolPluginInterface> > AnnotationWorkstationExtensio
   return _annotationTools;
 }
 
-void AnnotationWorkstationExtensionPlugin::startAnnotation(float x, float y, const std::string& type) {
+void AnnotationWorkstationExtensionPlugin::startAnnotation(float x, float y, const std::string& type, const QColor& forcedColor) {
   if (_generatedAnnotation) {
     return;
   }
+  _pendingAnnotationColor = forcedColor;
   std::shared_ptr<Annotation> annot = std::make_shared<Annotation>();
   annot->addCoordinate(x / _viewer->getSceneScale(), y / _viewer->getSceneScale());
   if (type == "dotannotation") {
     annot->setType(Annotation::Type::DOT);
     _generatedAnnotation = new DotQtAnnotation(annot, this, _viewer->getSceneScale());
   }
-  else if (type == "polyannotation") {
+  else if (type == "polyannotation" || type == "yellowpolyannotation") {
     annot->setType(Annotation::Type::POLYGON);
     PolyQtAnnotation* temp = new PolyQtAnnotation(annot, this, _viewer->getSceneScale());
     temp->setInterpolationType("linear");
@@ -1066,12 +1072,16 @@ void AnnotationWorkstationExtensionPlugin::finishAnnotation(bool cancel) {
       newAnnotation->setSelected(true);
       int cHeight = _treeWidget->visualItemRect(newAnnotation).height();
       QPixmap iconPM(cHeight, cHeight);
-      QColor defaultAnnotColor = _settings->value("DefaultAnnotationColor", "#F4FA58").value<QColor>();
+      QColor defaultAnnotColor = _pendingAnnotationColor.isValid()
+        ? _pendingAnnotationColor
+        : _settings->value("DefaultAnnotationColor", "#F4FA58").value<QColor>();
+      _pendingAnnotationColor = QColor();
       iconPM.fill(defaultAnnotColor);
       QIcon color(iconPM);
       newAnnotation->setIcon(0, color);
       newAnnotation->setData(0, Qt::UserRole, defaultAnnotColor);
       _generatedAnnotation->getAnnotation()->setColor(defaultAnnotColor.name().toStdString());
+      _pendingAnnotationColor = QColor();
       _treeWidget->resizeColumnToContents(0);      
       _treeWidget->resizeColumnToContents(1);
       _activeAnnotation = _generatedAnnotation;
@@ -1084,6 +1094,7 @@ void AnnotationWorkstationExtensionPlugin::finishAnnotation(bool cancel) {
       _viewer->scene()->removeItem(_generatedAnnotation);
       _generatedAnnotation->deleteLater();
       _generatedAnnotation = NULL;
+      _pendingAnnotationColor = QColor();
     }
   }
 }

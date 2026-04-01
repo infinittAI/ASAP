@@ -31,6 +31,7 @@ void ShortcutManager::ensureRegistry() {
     {"tool_pointsetannotation",       "PointSet Tool",            "Tool Switching", QKeySequence("I")},
     {"tool_zoom",                     "Zoom Tool",                "Tool Switching", QKeySequence("Z")},
     {"tool_pan",                      "Pan Tool",                 "Tool Switching", QKeySequence("X")},
+    {"tool_yellowpolyannotation",     "Yellow Poly Tool",         "Tool Switching", QKeySequence("B")},
 
     // Window
     {"window_open_file",              "Open file",                "Window",         QKeySequence("Ctrl+O")},

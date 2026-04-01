@@ -178,7 +178,7 @@ void AnnotationTool::mousePressEvent(QMouseEvent *event) {
         return;
       }
       else {
-        _annotationPlugin->startAnnotation(scenePos.x(), scenePos.y(), name());
+        _annotationPlugin->startAnnotation(scenePos.x(), scenePos.y(), name(), getForcedColor());
         _generating = true;
         _start = Point(scenePos.x(), scenePos.y());
         _last = _start;
