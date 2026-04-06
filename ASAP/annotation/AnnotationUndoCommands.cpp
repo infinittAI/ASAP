@@ -2,6 +2,7 @@
 #include "QtAnnotation.h"
 #include "QtAnnotationGroup.h"
 #include "AnnotationWorkstationExtensionPlugin.h"
+#include "annotation/AnnotationService.h"
 #include "annotation/Annotation.h"
 #include "annotation/AnnotationList.h"
 #include "annotation/AnnotationGroup.h"
@@ -140,7 +141,7 @@ void CreateAnnotationCommand::redo() {
   _plugin->_activeAnnotation = _annotation;
   _plugin->_annotToItem[_annotation] = newAnnotation;
 
-  connect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
+  QObject::connect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
     _plugin, SLOT(updateAnnotationToolTip(QtAnnotation*)));
   _plugin->updateAnnotationToolTip(_annotation);
 
@@ -149,7 +150,7 @@ void CreateAnnotationCommand::redo() {
 
 void CreateAnnotationCommand::undo() {
   // Disconnect signal
-  disconnect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
+  QObject::disconnect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
     _plugin, SLOT(updateAnnotationToolTip(QtAnnotation*)));
 
   // Remove tree widget item
@@ -204,7 +205,7 @@ DeleteAnnotationCommand::~DeleteAnnotationCommand() {
 
 void DeleteAnnotationCommand::redo() {
   // Disconnect signal
-  disconnect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
+  QObject::disconnect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
     _plugin, SLOT(updateAnnotationToolTip(QtAnnotation*)));
 
   // Remove tree widget item
@@ -285,7 +286,7 @@ void DeleteAnnotationCommand::undo() {
   _plugin->_annotToItem[_annotation] = newAnnotation;
   _plugin->_activeAnnotation = _annotation;
 
-  connect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
+  QObject::connect(_annotation, SIGNAL(annotationChanged(QtAnnotation*)),
     _plugin, SLOT(updateAnnotationToolTip(QtAnnotation*)));
   _plugin->updateAnnotationToolTip(_annotation);
 
