@@ -5,8 +5,9 @@
 #include "annotation/Annotation.h"
 #include "annotation/AnnotationList.h"
 #include "annotation/AnnotationGroup.h"
-#include "../PathologyViewer.h"
 #include <QTreeWidget>
+#include <QTreeWidgetItemIterator>
+#include <QGraphicsScene>
 #include <QPixmap>
 #include <QIcon>
 #include <algorithm>
@@ -193,8 +194,9 @@ DeleteAnnotationCommand::~DeleteAnnotationCommand() {
   // If the command is destroyed while the annotation is in "deleted" state
   // (removed from model but not restored), clean up the QtAnnotation.
   if (_removed && _annotation) {
-    if (_plugin->_viewer) {
-      _plugin->_viewer->scene()->removeItem(_annotation);
+    QGraphicsScene* scene = _annotation->scene();
+    if (scene) {
+      scene->removeItem(_annotation);
     }
     delete _annotation;
   }
