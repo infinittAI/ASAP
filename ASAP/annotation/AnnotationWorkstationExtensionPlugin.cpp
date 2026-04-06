@@ -279,7 +279,6 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
       {"rectangleannotation", "tool_rectangleannotation"},
       {"measurementannotation", "tool_measurementannotation"},
       {"pointsetannotation", "tool_pointsetannotation"},
-      {"yellowpolyannotation", "tool_yellowpolyannotation"},
     };
     for (auto& tool : _annotationTools) {
       if (tool) {
@@ -290,6 +289,17 @@ void AnnotationWorkstationExtensionPlugin::onOptionsButtonPressed() {
             btn->setShortcut(ShortcutManager::getShortcut(toolShortcutIds[toolName], ""));
           }
         }
+      }
+    }
+
+    // Apply undo/redo shortcut changes
+    QList<QAction*> allActions = _viewer->actions();
+    for (QAction* action : allActions) {
+      QString text = action->text();
+      if (text.contains("Undo")) {
+        action->setShortcut(ShortcutManager::getShortcut("annotation_undo", QKeySequence(QKeySequence::Undo).toString()));
+      } else if (text.contains("Redo")) {
+        action->setShortcut(ShortcutManager::getShortcut("annotation_redo", QKeySequence(QKeySequence::Redo).toString()));
       }
     }
 
@@ -972,12 +982,12 @@ bool AnnotationWorkstationExtensionPlugin::initialize(PathologyViewer* viewer) {
 
   // Setup undo/redo actions
   QAction* undoAction = _undoStack->createUndoAction(this, tr("&Undo"));
-  undoAction->setShortcut(QKeySequence::Undo);
+  undoAction->setShortcut(ShortcutManager::getShortcut("annotation_undo", QKeySequence(QKeySequence::Undo).toString()));
   undoAction->setShortcutContext(Qt::ApplicationShortcut);
   _viewer->addAction(undoAction);
 
   QAction* redoAction = _undoStack->createRedoAction(this, tr("&Redo"));
-  redoAction->setShortcut(QKeySequence::Redo);
+  redoAction->setShortcut(ShortcutManager::getShortcut("annotation_redo", QKeySequence(QKeySequence::Redo).toString()));
   redoAction->setShortcutContext(Qt::ApplicationShortcut);
   _viewer->addAction(redoAction);
 

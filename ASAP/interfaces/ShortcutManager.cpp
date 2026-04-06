@@ -38,6 +38,10 @@ void ShortcutManager::ensureRegistry() {
     {"window_close_file",             "Close file",               "Window",         QKeySequence("Ctrl+C")},
     {"window_show_shortcuts",         "Show shortcuts",           "Window",         QKeySequence("F1")},
 
+    // Undo/Redo
+    {"annotation_undo",               "Undo",                     "General",        QKeySequence(QKeySequence::Undo)},
+    {"annotation_redo",               "Redo",                     "General",        QKeySequence(QKeySequence::Redo)},
+
     // Tree Widget
     {"tree_delete_item",              "Delete tree item",         "Tree",           QKeySequence("Del")},
   };

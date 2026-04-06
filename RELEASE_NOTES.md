@@ -29,3 +29,24 @@ When drawing a polygon or spline by dragging the mouse:
 This behavior only applies to **Polygon** and **Spline** annotation types. Rectangle, Dot, Pointset, and Measurement annotations are unaffected.
 
 To disable simplification entirely, uncheck **Simplify polygons on finish** in the options dialog.
+
+## Annotation Undo/Redo
+
+Undo and redo support has been added for annotation operations. Use **Ctrl+Z** to undo and **Ctrl+Shift+Z** to redo.
+
+### Supported operations
+
+| Operation | Undo | Description |
+|-----------|------|-------------|
+| **Move vertex** | Yes | Dragging a control point to a new position. Consecutive drags on the same point are merged into a single undo step. |
+| **Insert vertex** | Yes | Double-clicking on an edge to insert a new control point. |
+| **Remove vertex** | Yes | Deleting a control point from a finished annotation (Del key). |
+| **Create annotation** | Yes | Creating a new annotation is undoable — the annotation is removed from the list and hidden. |
+| **Delete annotation** | Yes | Deleting an annotation (E key) is undoable — the annotation is restored with its full state. |
+
+### Notes
+
+- Undo history is cleared when loading a new image or pressing the Clear button.
+- The undo stack limit is 100 operations.
+- Vertex operations during annotation creation (before finishing) are not undoable — use Del to remove the last point or Esc to cancel the entire annotation.
+- Undo/Redo shortcuts can be customized in **Settings > General** tab of the annotation options dialog.
