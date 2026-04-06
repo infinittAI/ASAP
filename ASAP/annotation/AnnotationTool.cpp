@@ -1,6 +1,7 @@
 #include "AnnotationTool.h"
 #include "QtAnnotation.h"
 #include "AnnotationWorkstationExtensionPlugin.h"
+#include "AnnotationUndoCommands.h"
 #include "annotation/Annotation.h"
 #include "interfaces/ShortcutManager.h"
 #include "../PathologyViewer.h"
@@ -47,7 +48,8 @@ void AnnotationTool::mouseMoveEvent(QMouseEvent *event) {
         int activeSeedPoint = active->getActiveSeedPoint();
         if (activeSeedPoint >= 0) {
           QPointF delta = (scenePos - _moveStart);
-          active->moveCoordinateBy(activeSeedPoint, Point(delta.x(), delta.y()));
+          _annotationPlugin->undoStack()->push(
+            new MoveCoordinateCommand(active, activeSeedPoint, delta.x(), delta.y()));
           _moveStart = scenePos;
         }
       }
@@ -97,17 +99,26 @@ void AnnotationTool::keyPressEvent(QKeyEvent *event) {
       }
       else if (_annotationPlugin->getActiveAnnotation()->getActiveSeedPoint() > -1) {
         int activeSeedPoint = _annotationPlugin->getActiveAnnotation()->getActiveSeedPoint();
-        _annotationPlugin->getActiveAnnotation()->removeCoordinate(activeSeedPoint);
-        if (activeSeedPoint - 1 >= 0) {
-          _annotationPlugin->getActiveAnnotation()->setActiveSeedPoint(activeSeedPoint - 1);
+        _annotationPlugin->undoStack()->push(
+          new RemoveCoordinateCommand(_annotationPlugin->getActiveAnnotation(), activeSeedPoint));
+        QtAnnotation* active = _annotationPlugin->getActiveAnnotation();
+        if (activeSeedPoint - 1 >= 0 && active) {
+          active->setActiveSeedPoint(activeSeedPoint - 1);
         }
-        else {
-          _annotationPlugin->getActiveAnnotation()->setActiveSeedPoint(_annotationPlugin->getActiveAnnotation()->getAnnotation()->getCoordinates().size() - 1);
+        else if (active) {
+          int lastIdx = active->getAnnotation()->getCoordinates().size() - 1;
+          if (lastIdx >= 0) {
+            active->setActiveSeedPoint(lastIdx);
+          }
         }
         event->accept();
       }
       else if (_annotationPlugin->getActiveAnnotation()) {
-        _annotationPlugin->getActiveAnnotation()->removeCoordinate(-1);
+        int lastIdx = _annotationPlugin->getActiveAnnotation()->getAnnotation()->getCoordinates().size() - 1;
+        if (lastIdx >= 0) {
+          _annotationPlugin->undoStack()->push(
+            new RemoveCoordinateCommand(_annotationPlugin->getActiveAnnotation(), lastIdx));
+        }
         event->accept();
       }
     }

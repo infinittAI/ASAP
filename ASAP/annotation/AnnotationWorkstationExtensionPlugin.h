@@ -7,10 +7,13 @@
 #include <QString>
 #include <QMap>
 #include <QColor>
+#include <QUndoStack>
 
 class AnnotationService;
 class QtAnnotation;
 class QtAnnotationGroup;
+class CreateAnnotationCommand;
+class DeleteAnnotationCommand;
 class QDockWidget;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -25,6 +28,9 @@ class ANNOTATIONPLUGIN_EXPORT AnnotationWorkstationExtensionPlugin : public Work
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "ASAP.AnnotationWorkstationExtensionPlugin/1.0")
     Q_INTERFACES(WorkstationExtensionPluginInterface)
+
+    friend class CreateAnnotationCommand;
+    friend class DeleteAnnotationCommand;
 
 public :
     bool initialize(PathologyViewer* viewer);
@@ -46,6 +52,7 @@ public :
     void clearSelection();
     bool canClose();
     void keyPressEvent(QKeyEvent* event);
+    QUndoStack* undoStack() const;
 
 public slots:
     void onNewImageLoaded(std::weak_ptr<MultiResolutionImage> img, std::string fileName);
@@ -92,6 +99,7 @@ private :
     float _currentPixelArea;
     bool _annotationsVisible;
     QColor _pendingAnnotationColor;
+    QUndoStack* _undoStack;
 
     bool shouldClear();
     void clear();

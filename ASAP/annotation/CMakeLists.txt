@@ -4,6 +4,7 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN/../../../lib")
 SET(ANNOTATION_PLUGIN_HEADERS
     AnnotationWorkstationExtensionPlugin.h
     AnnotationTool.h
+    AnnotationUndoCommands.h
     DotAnnotationTool.h
     PolyAnnotationTool.h
     YellowPolyAnnotationTool.h
@@ -21,6 +22,7 @@ SET(ANNOTATION_PLUGIN_HEADERS
 
 SET(ANNOTATION_PLUGIN_SOURCE
     AnnotationTool.cpp
+    AnnotationUndoCommands.cpp
     AnnotationWorkstationExtensionPlugin.cpp
     MeasurementAnnotationTool.cpp
     RectangleAnnotationTool.cpp

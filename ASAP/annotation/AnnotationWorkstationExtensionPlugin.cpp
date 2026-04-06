@@ -4,6 +4,7 @@
 #include "YellowPolyAnnotationTool.h"
 #include "PointSetAnnotationTool.h"
 #include "SplineAnnotationTool.h"
+#include "AnnotationUndoCommands.h"
 #include "annotation/AnnotationService.h"
 #include "annotation/AnnotationList.h"
 #include "annotation/AnnotationGroup.h"
@@ -46,6 +47,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QKeyEvent>
+#include <QUndoStack>
 
 #include <numeric>
 #include <iostream>
@@ -64,8 +66,10 @@ AnnotationWorkstationExtensionPlugin::AnnotationWorkstationExtensionPlugin() :
   _currentAnnotationLabel(NULL),
   _currentAnnotationHeaderLabel(NULL),
   _currentPixelArea(1.),
-  _annotationsVisible(true)
+  _annotationsVisible(true),
+  _undoStack(new QUndoStack(this))
 {
+  _undoStack->setUndoLimit(100);
   QUiLoader loader;
   QFile file(":/AnnotationWorkstationExtensionPlugin_ui/AnnotationDockWidget.ui");
   bool openend = file.open(QFile::ReadOnly);
@@ -362,6 +366,7 @@ void AnnotationWorkstationExtensionPlugin::keyPressEvent(QKeyEvent* event) {
 }
 
 void AnnotationWorkstationExtensionPlugin::clear() {
+  _undoStack->clear();
   if (_generatedAnnotation) {
     for (std::vector<std::shared_ptr<ToolPluginInterface> >::iterator it = _annotationTools.begin(); it != _annotationTools.end(); ++it) {
       std::dynamic_pointer_cast<AnnotationTool>((*it))->cancelAnnotation();
@@ -964,6 +969,18 @@ bool AnnotationWorkstationExtensionPlugin::initialize(PathologyViewer* viewer) {
   tool.reset(new MeasurementAnnotationTool(this, viewer));
   _annotationTools.push_back(tool);
   _annotationService.reset(new AnnotationService());
+
+  // Setup undo/redo actions
+  QAction* undoAction = _undoStack->createUndoAction(this, tr("&Undo"));
+  undoAction->setShortcut(QKeySequence::Undo);
+  undoAction->setShortcutContext(Qt::ApplicationShortcut);
+  _viewer->addAction(undoAction);
+
+  QAction* redoAction = _undoStack->createRedoAction(this, tr("&Redo"));
+  redoAction->setShortcut(QKeySequence::Redo);
+  redoAction->setShortcutContext(Qt::ApplicationShortcut);
+  _viewer->addAction(redoAction);
+
   return true;
 }
 
@@ -1061,34 +1078,17 @@ void AnnotationWorkstationExtensionPlugin::finishAnnotation(bool cancel) {
     if (!cancel) {
       _generatedAnnotation->getAnnotation()->setName("Annotation " + QString::number(_annotationIndex).toStdString());
       _annotationIndex += 1;
-      _qtAnnotations.append(_generatedAnnotation);
-      _annotationService->getList()->addAnnotation(_generatedAnnotation->getAnnotation());
-      QTreeWidgetItem* newAnnotation = new QTreeWidgetItem(_treeWidget);
-      newAnnotation->setText(1, QString::fromStdString(_generatedAnnotation->getAnnotation()->getName()));
-      newAnnotation->setText(2, QString::fromStdString(_generatedAnnotation->getAnnotation()->getTypeAsString()));
-      newAnnotation->setFlags(newAnnotation->flags() & ~Qt::ItemIsDropEnabled);
-      newAnnotation->setFlags(newAnnotation->flags() | Qt::ItemIsEditable);
-      newAnnotation->setData(1, Qt::UserRole, QVariant::fromValue<QtAnnotation*>(_generatedAnnotation));
-      newAnnotation->setSelected(true);
-      int cHeight = _treeWidget->visualItemRect(newAnnotation).height();
-      QPixmap iconPM(cHeight, cHeight);
       QColor defaultAnnotColor = _pendingAnnotationColor.isValid()
         ? _pendingAnnotationColor
         : _settings->value("DefaultAnnotationColor", "#F4FA58").value<QColor>();
       _pendingAnnotationColor = QColor();
-      iconPM.fill(defaultAnnotColor);
-      QIcon color(iconPM);
-      newAnnotation->setIcon(0, color);
-      newAnnotation->setData(0, Qt::UserRole, defaultAnnotColor);
       _generatedAnnotation->getAnnotation()->setColor(defaultAnnotColor.name().toStdString());
       _pendingAnnotationColor = QColor();
-      _treeWidget->resizeColumnToContents(0);      
-      _treeWidget->resizeColumnToContents(1);
-      _activeAnnotation = _generatedAnnotation;
-      _annotToItem[_activeAnnotation] = newAnnotation;
-      updateAnnotationToolTip(_activeAnnotation);
-      connect(_activeAnnotation, SIGNAL(annotationChanged(QtAnnotation*)), this, SLOT(updateAnnotationToolTip(QtAnnotation*)));
+
+      // Push undo command which handles model registration
+      QtAnnotation* annot = _generatedAnnotation;
       _generatedAnnotation = NULL;
+      _undoStack->push(new CreateAnnotationCommand(this, annot));
     }
     else {
       _viewer->scene()->removeItem(_generatedAnnotation);
@@ -1101,29 +1101,7 @@ void AnnotationWorkstationExtensionPlugin::finishAnnotation(bool cancel) {
 
 void AnnotationWorkstationExtensionPlugin::deleteAnnotation(QtAnnotation* annotation) {
   if (annotation) {
-    if (_treeWidget) {
-      QTreeWidgetItemIterator it(_treeWidget);
-      while (*it) {
-        if (annotation == (*it)->data(1, Qt::UserRole).value<QtAnnotation*>()) {
-          if (_viewer) {
-            _viewer->scene()->removeItem(annotation);
-          }
-          if (_annotationService) {
-            std::vector<std::shared_ptr<Annotation> > annots = _annotationService->getList()->getAnnotations();
-            int annotInd = std::find(annots.begin(), annots.end(), annotation->getAnnotation()) - annots.begin();
-            _annotationService->getList()->removeAnnotation(annotInd);
-          }
-          annotation->deleteLater();
-          _annotToItem.remove(annotation);
-          _qtAnnotations.removeOne(annotation);
-          _selectedAnnotations.remove(annotation);
-          (*it)->setSelected(false);
-          delete (*it);
-          break;
-        }
-        ++it;
-      }
-    }
+    _undoStack->push(new DeleteAnnotationCommand(this, annotation));
   }
 }
 
@@ -1199,4 +1177,8 @@ void AnnotationWorkstationExtensionPlugin::removeAnnotationFromSelection(QtAnnot
 
 QSet<QtAnnotation*> AnnotationWorkstationExtensionPlugin::getSelectedAnnotations() {
   return _selectedAnnotations;
+}
+
+QUndoStack* AnnotationWorkstationExtensionPlugin::undoStack() const {
+  return _undoStack;
 }

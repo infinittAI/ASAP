@@ -1,6 +1,7 @@
 #include "PolyAnnotationTool.h"
 #include "QtAnnotation.h"
 #include "AnnotationWorkstationExtensionPlugin.h"
+#include "AnnotationUndoCommands.h"
 #include <QAction>
 #include <QPen>
 #include <QGraphicsLineItem>
@@ -51,7 +52,9 @@ void PolyAnnotationTool::mouseDoubleClickEvent(QMouseEvent *event) {
           if (!lineLocation.isNull()) {
             std::pair<int, int> indices = active->getLastClickedCoordinateIndices();
             if (indices.first >= 0) {
-              active->insertCoordinate(indices.second, Point(lineLocation.x(), lineLocation.y()));
+              _annotationPlugin->undoStack()->push(
+                new InsertCoordinateCommand(active, indices.second,
+                  lineLocation.x(), lineLocation.y()));
             }
           }
         }
